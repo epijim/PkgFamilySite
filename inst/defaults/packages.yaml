@@ -1,0 +1,59 @@
+# Teal
+
+- title: "teal"
+  description: |
+    teal is a shiny-based interactive exploration framework for analyzing data. teal applications require app developers to specify: data (CDISC, dataframes of MAEs) and teal modules.
+  website: https://insightsengineering.github.io/teal
+  github: https://github.com/insightsengineering/teal
+  #package: https://cran.r-project.org/package=teal
+- title: "teal.modules.general"
+  description: |
+    This package contains a set of standard teal modules for you to include in applications. These include modules for:
+    viewing data (including tm_variable_browser, tm_data_table, tm_file_viewer, ...), visualizing data (tm_g_scatterplot, tm_g_association, ...),
+    understanding missing and outlier values within your data (tm_missing_data, tm_outliers, ...)
+    performing simple data analysis
+  github: https://github.com/insightsengineering/teal.modules.general
+- title: "teal.modules.clinical"
+  description: |
+    This package contains a set of standard teal modules to be used with CDISC data in order to generate many of the standard outputs used in clinical trials.
+  github: https://github.com/insightsengineering/teal.modules.clinical
+
+# Tern
+
+- title: "tern"
+  description: |
+    The tern R package contains analysis functions to create tables and graphs used for clinical trial reporting.
+  website: https://insightsengineering.github.io/tern
+  github: https://github.com/insightsengineering/tern
+- title: "nestcolor"
+  description: |
+    Package managing visual conventions of NEST graphs
+  website: https://insightsengineering.github.io/nestcolor
+  github: https://github.com/insightsengineering/tern
+
+# Other packages
+
+- title: "rtables"
+  description: |
+    The rtables package is the foundation layer of NEST's tabling  capabilities.
+    It's functions are used to create layouts, produce elementary statistics as well
+    as handle many generic table  control features like content pruning and sorting.
+    You can use rtables functions to create  additional simple to complex layouts
+    to address specific study needs.
+  website: https://roche.github.io/rtables/
+  github: https://github.com/Roche/rtables
+  package: https://cran.r-project.org/package=rtables
+- title: "formatters"
+  description: |
+    We provide a framework for rendering complex tables to ASCII, and a set of
+    formatters for transforming values or sets of values into ASCII-ready display strings.
+  website: https://insightsengineering.github.io/formatters/
+  github: https://github.com/insightsengineering/formatters
+  package: https://cran.r-project.org/package=formatters
+- title: "scda"
+  description: |
+    This R package contains functions for accessing synthetic CDISC from data archive packages such as scda.2022.
+    At least one of these archive packages should be installed in order to use this package.
+  website: https://insightsengineering.github.io/scda/
+  github: https://github.com/insightsengineering/scda
+

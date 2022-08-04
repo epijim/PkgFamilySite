@@ -1,0 +1,26 @@
+# options apply to all posts in this folder
+
+# freeze computational output
+freeze: auto
+
+# Make a big title block
+title-block-banner: true
+
+# long dates
+date-format: long
+
+# smooth scroll
+smooth-scroll: true
+
+# Default author
+author:
+  - name: Nest team
+    url: https://github.com/insightsengineering
+    affiliation: Pharma companies
+    affiliation-url: https://roche.com/
+
+# citation
+citation: true
+
+# Enable CC licence appendix
+license: "CC BY"

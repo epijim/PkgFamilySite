@@ -1,0 +1,175 @@
+---
+title: "Functions"
+echo: false
+#jupyter: python3
+section-divs: false
+keep-md: true
+---
+
+```{r}
+#| output: false
+library(dplyr)
+library(DT)
+
+# read YAML
+  d_scanme <- yaml::read_yaml("packages.yaml")
+  
+  # scrape all 
+  helper_extract_yaml <- function(data){
+    tibble::as_tibble(data)
+  }
+  
+  data_pkgs <- tibble(
+    title = character(),
+    description = character(),
+    website = character(),
+    github = character()
+  )
+  
+  for (i in seq_along(d_scanme)){
+    data_pkgs <- helper_extract_yaml(d_scanme[[i]]) %>%
+      bind_rows(data_pkgs)
+  }
+  
+# check installed (handle installation to container??)
+  package_check <- lapply(
+    data_pkgs$title,
+    FUN = function(x) {
+      if (!require(x, character.only = TRUE)) {
+        stop(glue::glue("{x} needs to installed first"))
+      }
+    }
+  )
+
+  #######################################################
+  # Get name and title tags ----------------------- LOOP
+     # Helper to extract the rd tags
+     format_rd_extract <- function(tag = "name"){
+      lapply(rd_db, tools:::.Rd_get_metadata, tag) %>%
+        tibble::enframe(name = "function") %>% 
+        tidyr::unnest(value)
+     }
+   
+  function_output_data <- NULL
+  for (i_pkg in data_pkgs$title){
+    
+    # build doc database
+    rd_db <- tools::Rd_db(package = i_pkg)
+  
+    ## Create info on functions
+    functions <- format_rd_extract("title") %>% rename(title = value) %>%
+      left_join(
+        format_rd_extract("name") %>% rename(name = value)
+      ) %>%
+      left_join(
+        lapply(rd_db, tools:::.Rd_get_metadata, "keyword") %>%
+          purrr::map_lgl(~ "internal" %in% .) %>%
+          tibble::enframe(name = "function",value = "is_internal")
+      ) 
+  
+    function_output_data_i <- functions %>%
+      select(
+        function_name = name,
+        title = title,
+        is_internal
+      ) %>%
+      mutate(
+        function_name = paste0(function_name,"()"),
+        package = i_pkg
+      ) %>%
+      arrange(function_name)
+    
+    function_output_data <- bind_rows(
+      function_output_data_i,function_output_data
+    )
+  }
+
+  
+
+```
+
+## Placeholder
+
+All the functions are below to show they can be pulled from the `.rd` files,
+but ideally we'd replace this page with a search.
+
+## Function metrics
+
+There are `r function_output_data %>% filter(!is_internal) %>% nrow()`  functions exported 
+from the `r n_distinct(function_output_data$package)` packages in this package family.
+
+```{r}
+function_output_data %>% 
+  group_by(package,is_internal) %>% 
+  summarise(n = n(), .groups = 'keep') %>% 
+  arrange(package) %>%
+  mutate(
+    is_internal = case_when(
+      is_internal ~ "Internal",
+      TRUE ~ "Exported"
+    )
+  ) %>%
+  tidyr::pivot_wider(names_from = is_internal,values_from = n) %>%
+  knitr::kable(caption = "Functions present in the packages")
+```
+
+## Functions
+
+```{r}
+#| label: "exported"
+#| id: "exported"
+#| output: asis
+
+functions_filtered <- function_output_data %>% filter(!is_internal)
+
+show_functions <- function(data){
+  data %>%
+    arrange(function_name) %>%
+    select(
+      Function = function_name, Title = title, Package = package
+    ) %>%
+    datatable(
+      rownames = FALSE,
+      filter = 'top', options = list(
+      #pageLength = 5, 
+      autoWidth = TRUE
+      )
+    )  
+}
+
+show_functions(functions_filtered)
+
+
+# for (i_package in  unique(functions_filtered$package)){
+#   i_data_package <- functions_filtered %>% filter(package == i_package)
+#   i_package_link <- data_pkgs %>% filter(title == i_package) %>% pull(website)
+#   cat('\n')
+#   cat("###",glue::glue("[{i_package}]({i_package_link})"), "\n")
+#   cat('\n')
+#   for (i in 1:nrow(i_data_package)){
+#     i_data <- slice(i_data_package, i)
+#     
+#     cat('\n') 
+#     cat("**",i_data$function_name,"**: ", sep = "")
+#     cat(i_data$title)
+#     cat('\n')
+#   }
+# }
+
+```
+
+## Internal non-exported functions
+
+```{r}
+#| label: "non-exported"
+#| id: "non-exported"
+#| output: asis
+
+functions_filtered <- function_output_data %>% filter(is_internal)
+
+show_functions(functions_filtered)
+
+
+```
+
+

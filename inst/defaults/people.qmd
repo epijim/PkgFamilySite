@@ -1,0 +1,212 @@
+---
+title: "People"
+echo: false
+#jupyter: python3
+section-divs: false
+keep-md: true
+---
+
+```{r}
+#| output: false
+#| cache: false
+
+library(dplyr)
+library(GithubMetrics)
+```
+
+```{r}
+#| output: false
+#| cache: true
+
+
+  d_scanme <- yaml::read_yaml("packages.yaml")
+  
+  # scrape all 
+  helper_extract_yaml <- function(data){
+    tibble::as_tibble(data)
+  }
+  
+  data_pkgs <- tibble(
+    title = character(),
+    description = character(),
+    website = character(),
+    github = character()
+  )
+  
+  for (i in seq_along(d_scanme)){
+    data_pkgs <- helper_extract_yaml(d_scanme[[i]]) %>%
+      bind_rows(data_pkgs)
+  }
+  
+  data_pkgs <- data_pkgs %>%
+    mutate(
+      repo_name = gsub("https://github.com/","",github)
+    )
+
+```
+
+```{r}
+#| output: false
+#| cache: true
+#| label: "commits"
+
+#####################################################################
+### get commits #############-----------------------------------------
+  repo_all_commits <- gh_commits_get(
+    data_pkgs$repo_name,
+    days_back = 365*10
+  )
+
+  summarised_commits <- repo_all_commits %>%
+      group_by(author) %>%
+      summarise(
+        commits = n(),
+        last_commit = max(datetime),
+        first_commit = min(datetime)
+      ) %>%
+      mutate(
+        last_commit = as.Date(last_commit),
+        first_commit = as.Date(first_commit),
+        days = as.numeric(last_commit - first_commit),
+        text_time = case_when(
+          days == 0 ~ "commit in a single day",
+          days > 365*2 ~ paste("commits over",round(days/365,1),"years"),
+          days > 365 ~ paste("commits over",round(days/365,1),"year"),
+          days > 30*2 ~ paste("commits over",round(days/30.25,0),"months"),
+          days > 30 ~ paste("commits over",round(days/30.25,0),"month"),
+          days <= 30 ~ paste(" commits over",days,"days"),
+          TRUE ~ ""
+        )
+      ) %>%
+      filter(!author %in% c(".gitconfig missing email","actions-user"))
+```
+  
+```{r}
+#| output: false
+#| cache: true
+#| label: "contributorscomments"
+# issues
+  issues <- gh_issues_get(data_pkgs$repo_name, days_back =  365*10)
+  comments <- gh_issues_comments_get(data_pkgs$repo_name, days_back =  365*10)
+  
+# Summarise
+  summarised_discussion <- tibble::tibble(
+    author = unique(c(issues$author,comments$author))
+  ) %>%
+    left_join(
+      comments %>%
+        group_by(author) %>%
+        summarise(
+          comments = n()
+        )
+    ) %>%
+    left_join(
+      issues %>%
+        group_by(author) %>%
+        summarise(
+          issues = n()
+        )
+    ) %>%
+    # pretty it
+    mutate(
+      comments_text = case_when(
+        is.na(comments) ~ "0 comments",
+        comments == 1 ~ "1 comment",
+        comments > 1 ~ paste(comments,"comments")
+      ),
+      issues_text = case_when(
+        is.na(issues) ~ "0 issues",
+        issues == 1 ~ "1 issue",
+        issues > 1 ~ paste(issues,"issues")
+      )
+    )
+```
+
+```{r}
+#| output: false
+#| cache: true
+#| label: "contributorscommits"
+
+# Define contributions
+  contributors <- c(comments$author,repo_all_commits$author,issues$author) %>%
+    unique() %>% na.omit() %>%
+  # pull info
+  gh_user_get() %>%
+  mutate(author = username) %>%
+  left_join(
+    summarised_commits, by = "author"
+  ) %>%
+  left_join(
+    summarised_discussion, by = "author"
+  )
+
+  contributors <- contributors %>% 
+    mutate(
+      discussion_text = case_when(
+        !is.na(comments) & !is.na(issues) ~ paste(",",comments_text,"and",issues_text),
+        !is.na(comments) ~ paste(",",comments_text),
+        !is.na(issues) ~ paste(",",issues_text)
+      ),
+      discussion_text = ifelse(is.na(discussion_text),"",discussion_text)
+    ) 
+```
+
+```{r}
+#| output: false
+#| cache: true
+#| label: "geneatehtml"
+
+# Generate html for commits
+  html_commits <- contributors %>%
+    mutate(
+      year = as.numeric(format(last_commit,"%Y")),
+      commits = ifelse(is.na(commits),0,commits)
+      ) %>%
+    #arrange(-year,-commits) %>%
+    arrange(-commits,-issues,-comments) %>%
+    filter(!is.na(name)) %>%
+    filter(!is.na(author)) %>%
+    mutate(
+      title =
+        glue::glue(
+#          '<img src="{avatar}" alt="" width = "30" height="30"> {name} ({author}): {commits} commits between {first_commit} and {last_commit}'
+          '<img src="{avatar}" alt="" width = "30" height="30"> {name} ({author}): {commits} commits{discussion_text}'
+          )
+    ) %>%
+    select(tail(names(.), 1)) %>%
+    knitr::kable("html", escape = FALSE)
+  
+  html_commits <- gsub(" <thead>.*</thead>","",html_commits)
+```
+
+```{r}
+#| label: "people"
+#| id: "people"
+#| output: asis
+
+ever_interacted <- contributors %>%
+  pull(author) %>% n_distinct()
+  
+ever_committed <- n_distinct(repo_all_commits$commit_email)
+  
+ever_discussed <- n_distinct(summarised_discussion$author)
+  
+# render --------  
+cat(
+  glue::glue(
+    "
+
+    </br>
+
+    <p>This family of packages is a collaboration. We'd like to acknowledge the {ever_interacted} people that have 
+    contributed to these packages (based on unique email addresses in the commit history) and the 
+    {ever_discussed} people that have engaged in the discussion via making an issue or commenting on an existing issue.</p>
+    <p>
+    The {ever_interacted} people where their contributions (commits or discussion) are linked to a Github account are listed below.</p>
+    </br>
+    {html_commits}
+    "
+  ))
+```
+
+

@@ -1,0 +1,25 @@
+---
+title: "Quarto for an Academic Website"
+description: |
+    I continue my long search for a way to generate a nicely formatted
+    website with publication list based on adding publication information to a single source of truth
+    without re-remembering how all the formatting works each time.
+date: "2022-05-11"
+categories:
+  - website
+engine: markdown
+code-fold: true
+image: /posts/quarto-website/tobias-meme.jpg
+---
+
+# Intro
+
+I've never been good at keeping my website updated. I always go through two different phases of maintenance:
+
+1. Rushing around creating a new website with bells and whistles using whatever the flavor of the month is
+2. Never updating an existing website
+
+I'm hoping to break out of this cycle, but am currently solidly within Phase 1. 
+
+![](tobias-meme.jpg){.image-fluid .mx-auto .d-block}
+
